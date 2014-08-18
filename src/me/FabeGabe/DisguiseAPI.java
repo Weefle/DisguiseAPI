@@ -33,20 +33,31 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class DisguiseAPI {
-
+	
+	/*
+	* Variables
+	*/
+	// New instance.
 	private static DisguiseAPI instance = new DisguiseAPI();
+	// List of players who are disguised.
 	private List<String> disguised = new ArrayList<String>();
+	// Map storing players' disguise name.
 	private Map<String, String> disguise = new HashMap<String, String>();
 
+	// Returns instance (new API).
 	public static DisguiseAPI getAPI() {
 		return instance;
 	}
 
+	// Just in case you don't want to do the hard stuff. ;)
 	public void initialize(final JavaPlugin plugin) {
+		// Registers new listener.
 		plugin.getServer().getPluginManager().registerEvents(new Listener() {
 
+			// Handles player respawn skin change glitch.
 			@EventHandler
 			public void onRespawn(PlayerRespawnEvent e) {
+				// Runs a scheduled task to refresh. (Won't work instantly.)
 				plugin.getServer().getScheduler()
 						.scheduleSyncDelayedTask(plugin, new BukkitRunnable() {
 							@Override
@@ -56,63 +67,94 @@ public class DisguiseAPI {
 						}, 1l);
 			}
 
+			// Handles map/list duplication prevention 
+			// and NullPointerExceptions whilst sending packets.
 			@EventHandler
 			public void onLeave(PlayerQuitEvent e) {
 				Player p = e.getPlayer();
+				// Checks if the player was disguised.
 				if (isDisguised(p)) {
+					// Disguises player as (him/her)self, then removes from list and map
+					// making sure that there are no duplications in the map nor in the list.
 					disguisePlayer(p, Bukkit.getOnlinePlayers(), p.getName());
 					disguise.remove(p.getName());
 					disguised.remove(p.getName());
 				}
 			}
 
+			// Handles join 'not updated' disguises.
 			@EventHandler
 			public void onJoin(PlayerJoinEvent e) {
+				// Refreshes the player's view (so players are disguised).
 				refresh(e.getPlayer());
 			}
+			
 		}, plugin);
 	}
 
+	// Returns the list of all disguised people.
 	public List<String> getDisguised() {
 		return disguised;
 	}
-
+	
+	// Returns if a player is disguised or not.
 	public boolean isDisguised(Player p) {
 		return disguised.contains(p.getName());
 	}
 
+	// Returns the userName applied to the player in the disguise.
 	public String getDisguise(Player p) {
 		return disguise.get(p.getName());
 	}
 
+	// Disguise player method. (Disguises player as 'newName')
 	public void disguisePlayer(Player p, Player[] canSee, String newName) {
+		// Getting handle from the player.
 		EntityPlayer player = ((CraftPlayer) p).getHandle();
+		// Creating our packet.
 		PacketPlayOutNamedEntitySpawn packet = new PacketPlayOutNamedEntitySpawn(
 				player);
+		// Trying to set field a and b accessible, 
+		// then applying the packet to all the other players.
 		try {
+			// Id field.
 			Field a = packet.getClass().getDeclaredField("a");
+			// GameProfile field.
 			Field b = packet.getClass().getDeclaredField("b");
+			// Allowing accessibility. (a is not needed, since we're just getting the name).
 			b.setAccessible(true);
+			// Setting b (from the player's info/packet) to a 
+			// new GameProfile with a being the name, then 
+			// newName, being the player's displayed tag.
 			b.set(packet, new GameProfile(a.getName(), newName));
+			// Looping through all the players, then checking if cS is not the player,
+			// evading freeze glitches and/or any errors.
 			for (Player cS : canSee) {
 				if (cS != p) {
+					// Getting handle from cS, then sending the packet to them.
 					EntityPlayer cP = ((CraftPlayer) cS).getHandle();
 					cP.playerConnection.sendPacket(packet);
 				}
 			}
+			// Adding the player to the list, and setting the 
+			// value for the player's name to be the disguise.
 			disguised.add(p.getName());
 			disguise.put(p.getName(), newName);
 		} catch (Exception e) {
+			//Otherwise, we print the stack trace.
 			e.printStackTrace();
 		}
 	}
 
 	public void refresh() {
+		// Refreshing every single player.
 		for (String s : disguised) {
 			refresh(Bukkit.getPlayer(s));
 		}
 	}
 
+	// Refreshing player 'p', without modifying 
+	// the list or map, but getting their values.
 	private void refresh(Player p) {
 		PacketPlayOutNamedEntitySpawn pack = new PacketPlayOutNamedEntitySpawn(
 				((CraftPlayer) p).getHandle());
