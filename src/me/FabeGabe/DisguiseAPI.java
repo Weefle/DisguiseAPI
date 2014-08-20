@@ -81,7 +81,7 @@ public class DisguiseAPI {
 					// and map
 					// making sure that there are no duplications in the map nor
 					// in the list.
-					disguisePlayer(p, Bukkit.getOnlinePlayers(), p.getName());
+					unDisguisePlayer(p);
 					disguise.remove(p.getName());
 					disguised.remove(p.getName());
 				}
