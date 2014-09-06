@@ -2,7 +2,7 @@ package me.FabeGabe;
 
 /**
  * 
- * @author fabegabe
+ * 	   @author fabegabe
  * 
  *         If you use this library, make sure to give credit to the original
  *         author.
