@@ -41,7 +41,7 @@ public class DisguiseAPI {
 	 */
 
 	// New instance.
-	private static DisguiseAPI instance = new DisguiseAPI();
+	private static DisguiseAPI api = new DisguiseAPI();
 	// List of players who are disguised.
 	private List<String> disguised = new ArrayList<String>();
 	// Map storing players' disguise name.
@@ -49,7 +49,7 @@ public class DisguiseAPI {
 
 	// Returns instance (new API).
 	public static DisguiseAPI getAPI() {
-		return instance;
+		return api;
 	}
 
 	// Just in case you don't want to do the hard stuff. ;)
