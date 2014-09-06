@@ -61,6 +61,8 @@ public class DisguiseAPI {
 			@EventHandler
 			public void onRespawn(PlayerRespawnEvent e) {
 				// Runs a scheduled task to refresh. (Won't work instantly.)
+				// *Edit: I meant the disguise won't re-apply if the task
+				// is not delayed.*
 				plugin.getServer().getScheduler()
 						.scheduleSyncDelayedTask(plugin, new BukkitRunnable() {
 							@Override
