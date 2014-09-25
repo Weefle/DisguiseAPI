@@ -1,5 +1,8 @@
 package me.FabeGabe.Example;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import me.FabeGabe.DisguiseAPI;
 
 import org.bukkit.Bukkit;
@@ -24,9 +27,9 @@ public class Example extends JavaPlugin {
 			return true;
 		Player p = (Player) s;
 		if (cmd.getName().equalsIgnoreCase("dis")) {
-			if (args.length != 1) {
+			if (args.length == 0) {
 				p.sendMessage(ChatColor.RED + "Usage: /dis <player>");
-			} else {
+			} else if (args.length == 1) {
 				if (DisguiseAPI.getAPI().isDisguised(p)) {
 					p.sendMessage(ChatColor.RED
 							+ "Undisguise before you disguise again!");
@@ -36,6 +39,19 @@ public class Example extends JavaPlugin {
 					p.sendMessage(ChatColor.GREEN + "Disguised as " + args[0]
 							+ "!");
 				}
+			} else if (args.length == 2) {
+				// Splitting players by a comma.
+				String[] players = args[1].split(",");
+				List<String> dis = new ArrayList<String>();
+				for (String sp : players) {
+					if (Bukkit.getPlayer(sp) == null)
+						continue;
+					dis.add(sp);
+				}
+				DisguiseAPI.getAPI().disguisePlayer(p, dis, args[0]);
+				p.sendMessage(ChatColor.GREEN + "Disguised as " + args[0] + "!");
+			} else {
+
 			}
 		} else if (cmd.getName().equalsIgnoreCase("udis")) {
 			if (DisguiseAPI.getAPI().isDisguised(p)) {
