@@ -41,7 +41,7 @@ public class Example extends JavaPlugin {
 				}
 			} else if (args.length == 2) {
 				// Splitting players by a comma.
-				String[] players = args[1].split(",");
+				String[] players = args[1].split("\\,");
 				List<String> dis = new ArrayList<String>();
 				for (String sp : players) {
 					if (Bukkit.getPlayer(sp) == null)
