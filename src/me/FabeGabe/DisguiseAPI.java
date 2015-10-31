@@ -1,36 +1,29 @@
 package me.FabeGabe;
 
-/**
- * 
- * 	   @author fabegabe
- * 
- *         If you use this library, make sure to give credit to the original
- *         author.
- * 
- *         http://www.github.com/fabegabe/DisguiseAPI
- * 
- */
-
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-
-import net.minecraft.server.v1_7_R1.EntityPlayer;
-import net.minecraft.server.v1_7_R1.PacketPlayOutNamedEntitySpawn;
-import net.minecraft.util.com.mojang.authlib.GameProfile;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_7_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import me.FabeGabe.Util.Disguise;
+import me.FabeGabe.Util.PlayerDisguise;
 
 public class DisguiseAPI {
 
@@ -42,18 +35,18 @@ public class DisguiseAPI {
 
 	// New instance.
 	private static DisguiseAPI api = new DisguiseAPI();
-	// List of players who are disguised.
-	private List<String> disguised = new ArrayList<String>();
-	// Map storing players' disguise name.
-	private Map<String, String> disguise = new HashMap<String, String>();
+	// Set storing players' disguise objects.
+	private Set<Disguise> disguises = new HashSet<Disguise>();
+	private JavaPlugin plugin;
 
-	// Returns instance (new API).
+	// Returns instance (API).
 	public static DisguiseAPI getAPI() {
 		return api;
 	}
 
 	// Just in case you don't want to do the hard stuff. ;)
 	public void initialize(final JavaPlugin plugin) {
+		this.plugin = plugin;
 		// Registers new listener.
 		plugin.getServer().getPluginManager().registerEvents(new Listener() {
 
@@ -63,37 +56,95 @@ public class DisguiseAPI {
 				// Runs a scheduled task to refresh. (Won't work instantly.)
 				// *Edit: I meant the disguise won't re-apply if the task
 				// is not delayed.*
-				plugin.getServer().getScheduler()
-						.scheduleSyncDelayedTask(plugin, new BukkitRunnable() {
-							@Override
-							public void run() {
-								refresh();
-							}
-						}, 1l);
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						refresh();
+					}
+				}.runTaskLater(plugin, 1l);
 			}
 
-			// Handles map/list duplication prevention
-			// and NullPointerExceptions whilst sending packets.
 			@EventHandler
-			public void onLeave(PlayerQuitEvent e) {
+			public void onMove(PlayerMoveEvent e) {
 				Player p = e.getPlayer();
-				// Checks if the player was disguised.
-				if (isDisguised(p)) {
-					// Disguises player as (him/her)self, then removes from list
-					// and map
-					// making sure that there are no duplications in the map nor
-					// in the list.
-					unDisguisePlayer(p);
-					disguise.remove(p.getName());
-					disguised.remove(p.getName());
+				if (getDisguise(p) == null)
+					return;
+				Disguise dis = getDisguise(p);
+				dis.move(e.getFrom(), e.getTo());
+			}
+
+			@EventHandler
+			public void onQuit(PlayerQuitEvent e) {
+				Player p = e.getPlayer();
+				for (Disguise d : disguises) {
+					new BukkitRunnable() {
+
+						@Override
+						public void run() {
+							d.revertDisguise(Arrays.asList(p));
+						}
+
+					}.runTaskLater(plugin, 1l);
+				}
+				if (getDisguise(p) == null)
+					return;
+				Disguise d = getDisguise(p);
+				d.revertDisguise(online());
+				disguises.remove(d);
+			}
+
+			@EventHandler
+			public void onJoin(PlayerJoinEvent e) {
+				Player p = e.getPlayer();
+				for (Disguise d : disguises) {
+					new BukkitRunnable() {
+
+						@Override
+						public void run() {
+							d.applyDisguise(Arrays.asList(p));
+						}
+
+					}.runTaskLater(plugin, 1l);
 				}
 			}
 
-			// Handles join 'not updated' disguises.
 			@EventHandler
-			public void onJoin(PlayerJoinEvent e) {
-				// Refreshes the player's view (so players are disguised).
-				refresh(e.getPlayer());
+			public void onHoldItem(PlayerItemHeldEvent e) {
+				Player p = e.getPlayer();
+				if (getDisguise(p) == null)
+					return;
+				Disguise dis = getDisguise(p);
+				if (!(dis instanceof PlayerDisguise))
+					return;
+				PlayerDisguise pd = (PlayerDisguise) dis;
+				pd.setItemInHand(e.getNewSlot());
+			}
+
+			@EventHandler
+			public void onInteract(PlayerInteractEvent e) {
+				if (e.getAction() != Action.LEFT_CLICK_AIR
+						&& e.getAction() != Action.LEFT_CLICK_BLOCK)
+					return;
+				Player p = e.getPlayer();
+				if (getDisguise(p) == null)
+					return;
+				Disguise dis = getDisguise(p);
+				if (!(dis instanceof PlayerDisguise))
+					return;
+				PlayerDisguise pd = (PlayerDisguise) dis;
+				pd.swingArm();
+			}
+
+			@EventHandler
+			public void onSneak(PlayerToggleSneakEvent e) {
+				Player p = e.getPlayer();
+				if (getDisguise(p) == null)
+					return;
+				Disguise dis = getDisguise(p);
+				if (!(dis instanceof PlayerDisguise))
+					return;
+				PlayerDisguise pd = (PlayerDisguise) dis;
+				pd.sneak(e.isSneaking());
 			}
 
 		}, plugin);
@@ -101,173 +152,76 @@ public class DisguiseAPI {
 
 	// Returns the list of all disguised people.
 	public List<String> getDisguised() {
-		return disguised;
+		List<String> s = new ArrayList<String>();
+		for (Disguise d : disguises) {
+			s.add(d.getPlayer().getName());
+		}
+		return s;
 	}
 
 	// Returns if a player is disguised or not.
 	public boolean isDisguised(Player p) {
-		return disguised.contains(p.getName());
+		for (Disguise d : disguises) {
+			if (d.getPlayer().equals(p))
+				return true;
+		}
+		return false;
 	}
 
-	// Returns the userName applied to the player in the disguise.
-	public String getDisguise(Player p) {
-		return disguise.get(p.getName());
+	// Returns the disguise applied to 'p'.
+	public Disguise getDisguise(Player p) {
+		for (Disguise d : disguises) {
+			if (d.getPlayer().equals(p))
+				return d;
+		}
+		return null;
 	}
 
 	// Undisguise player method.
 	public void unDisguisePlayer(Player p) {
-		// Getting handle from the player.
-		EntityPlayer player = ((CraftPlayer) p).getHandle();
-		// Creating our packet.
-		PacketPlayOutNamedEntitySpawn packet = new PacketPlayOutNamedEntitySpawn(
-				player);
-		// Trying to set field a and b accessible,
-		// then applying the packet to all the other players.
-		try {
-			// Id field.
-			Field a = packet.getClass().getDeclaredField("a");
-			// GameProfile field.
-			Field b = packet.getClass().getDeclaredField("b");
-			// Allowing accessibility. (a is not needed, since we're just
-			// getting the name).
-			b.setAccessible(true);
-			// Setting b (from the player's info/packet) to a
-			// new GameProfile with a being the id, then
-			// p.getName(), being the player's displayed tag.
-			b.set(packet, new GameProfile(a.getName(), p.getName()));
-			// Looping through all the players, then checking if cS is not the
-			// player,
-			// evading freeze glitches and/or any errors.
-			for (Player cS : Bukkit.getOnlinePlayers()) {
-				if (cS != p) {
-					// Getting handle from cS, then sending the packet to them.
-					EntityPlayer cP = ((CraftPlayer) cS).getHandle();
-					cP.playerConnection.sendPacket(packet);
-				}
-			}
-			// Adding the player to the list, and setting the
-			// value for the player's name to be the disguise.
-			disguised.remove(p.getName());
-			disguise.remove(p.getName());
-		} catch (Exception e) {
-			// Otherwise, we print the stack trace.
-			e.printStackTrace();
-		}
+		if (!isDisguised(p))
+			return;
+		getDisguise(p).revertDisguise(online());
+		disguises.remove(getDisguise(p));
+	}
+
+	public Collection<Player> online() {
+		return new ArrayList<Player>(Bukkit.getOnlinePlayers());
 	}
 
 	// Disguise player method. (Disguises player as 'newName')
-	public void disguisePlayer(Player p, Player[] canSee, String newName) {
-		// Getting handle from the player.
-		EntityPlayer player = ((CraftPlayer) p).getHandle();
-		// Creating our packet.
-		PacketPlayOutNamedEntitySpawn packet = new PacketPlayOutNamedEntitySpawn(
-				player);
-		// Trying to set field a and b accessible,
-		// then applying the packet to all the other players.
-		try {
-			// Id field.
-			Field a = packet.getClass().getDeclaredField("a");
-			// GameProfile field.
-			Field b = packet.getClass().getDeclaredField("b");
-			// Allowing accessibility. (a is not needed, since we're just
-			// getting the name).
-			b.setAccessible(true);
-			// Setting b (from the player's info/packet) to a
-			// new GameProfile with a being the name, then
-			// newName, being the player's displayed tag.
-			b.set(packet, new GameProfile(a.getName(), newName));
-			// Looping through all the players, then checking if cS is not the
-			// player,
-			// evading freeze glitches and/or any errors.
-			for (Player cS : canSee) {
-				if (cS != p) {
-					// Getting handle from cS, then sending the packet to them.
-					EntityPlayer cP = ((CraftPlayer) cS).getHandle();
-					cP.playerConnection.sendPacket(packet);
-				}
-			}
-			// Adding the player to the list, and setting the
-			// value for the player's name to be the disguise.
-			disguised.add(p.getName());
-			disguise.put(p.getName(), newName);
-		} catch (Exception e) {
-			// Otherwise, we print the stack trace.
-			e.printStackTrace();
-		}
+	public void disguisePlayer(Player p, Disguise d,
+			Collection<Player> players) {
+		if (isDisguised(p))
+			return;
+		d.applyDisguise(players);
+		disguises.add(d);
 	}
 
-	// Disguise player method. (Disguises player as 'newName')
-	public void disguisePlayer(Player p, List<String> canSee, String newName) {
-		// Getting handle from the player.
-		EntityPlayer player = ((CraftPlayer) p).getHandle();
-		// Creating our packet.
-		PacketPlayOutNamedEntitySpawn packet = new PacketPlayOutNamedEntitySpawn(
-				player);
-		// Trying to set field a and b accessible,
-		// then applying the packet to all the other players.
-		try {
-			// Id field.
-			Field a = packet.getClass().getDeclaredField("a");
-			// GameProfile field.
-			Field b = packet.getClass().getDeclaredField("b");
-			// Allowing accessibility. (a is not needed, since we're just
-			// getting the name).
-			b.setAccessible(true);
-			// Setting b (from the player's info/packet) to a
-			// new GameProfile with a being the name, then
-			// newName, being the player's displayed tag.
-			b.set(packet, new GameProfile(a.getName(), newName));
-			// Looping through all the players, then checking if cS is not the
-			// player,
-			// evading freeze glitches and/or any errors.
-			for (String cS : canSee) {
-				if (Bukkit.getPlayer(cS) == null) {
-					continue;
-				}
-				Player sp = Bukkit.getPlayer(cS);
-				if (sp != p) {
-					// Getting handle from sp, then sending the packet to them.
-					EntityPlayer cP = ((CraftPlayer) sp).getHandle();
-					cP.playerConnection.sendPacket(packet);
-				}
-			}
-			// Adding the player to the list, and setting the
-			// value for the player's name to be the disguise.
-			disguised.add(p.getName());
-			disguise.put(p.getName(), newName);
-		} catch (Exception e) {
-			// Otherwise, we print the stack trace.
-			e.printStackTrace();
-		}
+	public void disguisePlayer(Player p, Disguise d) {
+		disguisePlayer(p, d, online());
 	}
 
 	public void refresh() {
 		// Refreshing every single player.
-		for (String s : disguised) {
-			refresh(Bukkit.getPlayer(s));
+		for (Disguise d : disguises) {
+			refresh(d.getPlayer());
 		}
 	}
 
 	// Refreshing player 'p', without modifying
 	// the list or map, but getting their values.
 	private void refresh(Player p) {
-		PacketPlayOutNamedEntitySpawn pack = new PacketPlayOutNamedEntitySpawn(
-				((CraftPlayer) p).getHandle());
-		try {
-			Field f = pack.getClass().getDeclaredField("b");
-			GameProfile gp = new GameProfile(pack.getClass()
-					.getDeclaredField("a").getName(), disguise.get(p.getName()));
-			f.setAccessible(true);
-			f.set(pack, gp);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		for (Player lp : Bukkit.getOnlinePlayers()) {
-			if (lp != p) {
-				((CraftPlayer) lp).getHandle().playerConnection
-						.sendPacket(pack);
+		Disguise d = getDisguise(p);
+		new BukkitRunnable() {
+
+			@Override
+			public void run() {
+				d.revertDisguise(online());
+				d.applyDisguise(online());
 			}
-		}
+
+		}.runTaskLater(plugin, 1l);
 	}
 
 }

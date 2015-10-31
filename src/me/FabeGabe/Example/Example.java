@@ -3,14 +3,16 @@ package me.FabeGabe.Example;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.FabeGabe.DisguiseAPI;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import me.FabeGabe.DisguiseAPI;
+import me.FabeGabe.Util.Disguise;
+import me.FabeGabe.Util.PlayerDisguise;
 
 public class Example extends JavaPlugin {
 
@@ -20,6 +22,7 @@ public class Example extends JavaPlugin {
 		DisguiseAPI.getAPI().initialize(this);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public boolean onCommand(CommandSender s, Command cmd, String label,
 			String[] args) {
@@ -34,22 +37,25 @@ public class Example extends JavaPlugin {
 					p.sendMessage(ChatColor.RED
 							+ "Undisguise before you disguise again!");
 				} else {
-					DisguiseAPI.getAPI().disguisePlayer(p,
-							Bukkit.getOnlinePlayers(), args[0]);
-					p.sendMessage(ChatColor.GREEN + "Disguised as " + args[0]
-							+ "!");
+					Disguise d = new PlayerDisguise(p, args[0]);
+					DisguiseAPI.getAPI().disguisePlayer(p, d,
+							DisguiseAPI.getAPI().online());
+					p.sendMessage(
+							ChatColor.GREEN + "Disguised as " + args[0] + "!");
 				}
 			} else if (args.length == 2) {
 				// Splitting players by a comma.
 				String[] players = args[1].split("\\,");
-				List<String> dis = new ArrayList<String>();
+				List<Player> dis = new ArrayList<Player>();
 				for (String sp : players) {
 					if (Bukkit.getPlayer(sp) == null)
 						continue;
-					dis.add(sp);
+					dis.add(Bukkit.getPlayer(sp));
 				}
-				DisguiseAPI.getAPI().disguisePlayer(p, dis, args[0]);
-				p.sendMessage(ChatColor.GREEN + "Disguised as " + args[0] + "!");
+				Disguise d = new PlayerDisguise(p, args[0]);
+				DisguiseAPI.getAPI().disguisePlayer(p, d, dis);
+				p.sendMessage(
+						ChatColor.GREEN + "Disguised as " + args[0] + "!");
 			} else {
 
 			}
