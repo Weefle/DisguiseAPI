@@ -9,7 +9,7 @@ Learn more on LICENSE or http://www.gnu.org/copyleft/gpl.html.
 
 Runs on
 ===========
-CraftBukkit/Spigot 1.8
+CraftBukkit/Spigot 1.8 (http://www.getspigot.org/)
 
 For previous versions
 ===========
