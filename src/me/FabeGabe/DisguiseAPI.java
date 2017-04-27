@@ -39,9 +39,16 @@ public class DisguiseAPI {
 	private Set<Disguise> disguises = new HashSet<Disguise>();
 	private JavaPlugin plugin;
 
+	private DisguiseAPI() {}
+	
 	// Returns instance (API).
 	public static DisguiseAPI getAPI() {
 		return api;
+	}
+	
+	// Returns new API instance.
+	public static DisguiseAPI newInstance() {
+		return new DisguiseAPI();
 	}
 
 	// Just in case you don't want to do the hard stuff. ;)
