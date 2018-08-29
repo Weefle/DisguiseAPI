@@ -2,14 +2,12 @@ package me.FabeGabe.Example;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import me.FabeGabe.DisguiseAPI;
 import me.FabeGabe.Util.Disguise;
 import me.FabeGabe.Util.PlayerDisguise;
@@ -22,7 +20,6 @@ public class Example extends JavaPlugin {
 		DisguiseAPI.getAPI().initialize(this);
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public boolean onCommand(CommandSender s, Command cmd, String label,
 			String[] args) {

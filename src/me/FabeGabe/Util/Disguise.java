@@ -1,7 +1,6 @@
 package me.FabeGabe.Util;
 
 import java.util.Collection;
-
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;

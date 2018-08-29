@@ -6,12 +6,10 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
 import org.bukkit.ChatColor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
@@ -20,7 +18,7 @@ public class UUIDRetriever {
 
 	private String name;
 	private UUID uuid;
-	private final String WEB_PAGE = "http://mcuuid.com/api/";
+	private final String WEB_PAGE = "https://minecraft-api.com/api/uuid/uuid.php?pseudo=";
 	private static Map<UUID, Property> map = new HashMap<UUID, Property>();
 
 	public UUIDRetriever(String name) {
@@ -68,9 +66,7 @@ public class UUIDRetriever {
 			URL url = new URL(WEB_PAGE + name);
 			BufferedReader reader = new BufferedReader(
 					new InputStreamReader(url.openStream()));
-			JSONParser parser = new JSONParser();
-			JSONObject object = (JSONObject) parser.parse(reader);
-			String uid = (String) object.get("uuid_formatted");
+			String uid = reader.readLine();
 			this.uuid = UUID.fromString(uid);
 			reader.close();
 		} catch (Exception e) {
